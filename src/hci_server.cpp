@@ -1033,7 +1033,7 @@ private:
         buf[8] = 1;     // Page Repetition R1
         return cmd(HCI_CREATE_CONNECTION,buf,sizeof(buf));
     }
-    
+
     int switch_role(const bdaddr_t& addr, uint8_t role)
     {
         uint8_t buf[6+1];
@@ -1135,12 +1135,12 @@ private:
         auto* d = get_device((bdaddr_t*)data);
         uint8_t buf[6+1+16] = {0};
         memcpy(buf,data,6);
-		buf[ 6] =  4;
-		buf[ 7] = '0';
-		buf[ 8] = '0';
-		buf[ 9] = '0';
-		buf[10] = '0';
-		sys_msg("enter '0000' on keyboard to pair");
+        buf[ 6] =  4;
+        buf[ 7] = '0';
+        buf[ 8] = '0';
+        buf[ 9] = '0';
+        buf[10] = '0';
+        sys_msg("enter '0000' on keyboard to pair");
         return cmd(HCI_PIN_CODE_REQUEST_REPLY,buf,sizeof(buf));
     }
 
@@ -1363,7 +1363,7 @@ private:
                 return;
             }
         }
-        
+
         // interesting bug on libusb/simulator where ACL open packet arrives before hci connection complete
         // hci arrives on libusb_fill_interrupt_transfer, acl on libusb_fill_bulk_transfer but acl gets ahead
 
