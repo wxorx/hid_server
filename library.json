@@ -1,0 +1,16 @@
+{
+    "name": "hid_server",
+    "description": "Bluetooth HID server",
+    "author": "Peter Barrett",
+    "version": "0.0.1",
+    "homepage": "https://rossumblog.com",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/wxorx/hid_server"
+    },
+    "frameworks": ["espidf", "arduino"],
+    "platforms": ["espressif32"],
+    "keywords": ["bluetooth", "hid", "server"],
+	"headers" : "hid_server.h",
+	"includeDir" : "src"
+}
