@@ -33,7 +33,7 @@ hci_handle hci_open()
     _hci_transport._cb.notify_host_recv = [](uint8_t *data, uint16_t len) -> int {
         if (_hci_transport.handler)
             _hci_transport.handler(&_hci_transport,data,len,_hci_transport.handler_ref);
-        return ESP_OK; 
+        return ESP_OK;
     };
     _hci_transport._cb.notify_host_send_available = []() {
         if (_hci_transport.ready_handler)
@@ -120,5 +120,5 @@ void sys_set_pref(const char* key, const char* value)
 
 void sys_msg(const char* msg)
 {
-    printf("sys_msg:[%s]\n", msg);    
+    printf("sys_msg:[%s]\n", msg);
 }

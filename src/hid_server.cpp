@@ -783,21 +783,23 @@ class HIDSource {
 
 static uint32_t msToTicks(int ms)
 {
-  	return ms < 0 ? portMAX_DELAY : pdMS_TO_TICKS(ms);
+    return ms < 0 ? portMAX_DELAY : pdMS_TO_TICKS(ms);
 }
 
-HIDServer::HIDServer(const char *local_name)
-	: _local_name(local_name)
-	, _hid_source(0)
-	, _queue(0)
-	, _task(0)
+HIDServer::HIDServer(const char *local_name, uint32_t repeat_delay_ms, uint32_t repeat_rate_ms)
+    : _local_name(local_name)
+    , _hid_source(0)
+    , _queue(0)
+    , _task(0)
+    , _repeat_delay_ms(repeat_delay_ms)
+    , _repeat_rate_ms(repeat_rate_ms)
 {
 
 }
 
 HIDServer::~HIDServer()
 {
-	end();
+    end();
 }
 
 void HIDServer::begin()
@@ -805,26 +807,30 @@ void HIDServer::begin()
     end();
     _hid_source = new HIDSource(_local_name.c_str());
 
-	_queue = xQueueCreate(1, sizeof(HIDKey));
-	xTaskCreate(&updateLoop, "HIDServer", HID_SERVER_STACK_SIZE, this, HID_SERVER_PRIO, &_task);
+    _queue = xQueueCreate(1, sizeof(HIDKey));
+    xTaskCreate(&updateLoop, "HIDServer", HID_SERVER_STACK_SIZE, this, HID_SERVER_PRIO, &_task);
 }
 
-#define get_ms()    (unsigned long) 
+#define get_ms()    (unsigned long)
+
 
 void HIDServer::updateLoop(void *arg)
 {
-	HIDServer *_this = (HIDServer *)arg;
+    HIDServer *_this = (HIDServer *)arg;
     HIDKey key = {0};
     HIDKey rep = {0};
     uint64_t start_ts = 0ULL;
     bool do_repeat = false;
-	while (true) {
-		hci_update();
-		int ret =_this->checkKeys(key);
+    uint32_t repeat_delay = _this->_repeat_delay_ms;
 
+    while (true) {
+        hci_update();
+        int ret =_this->checkKeys(key);
         if (ret > 0) {
             rep = key;
+            xQueueOverwrite(_this->_queue, &key);
             start_ts = esp_timer_get_time();
+            repeat_delay = _this->_repeat_delay_ms;
             do_repeat = true;
         } else if (ret == 0) {
             do_repeat = false;
@@ -832,25 +838,28 @@ void HIDServer::updateLoop(void *arg)
         }
 
         if (do_repeat) {
-            if ((((esp_timer_get_time() - start_ts) / 1000ULL) % (75*3)) == 0) {
+            int32_t dt = (int32_t)((esp_timer_get_time() - start_ts) / 1000ULL);
+            if (dt >= repeat_delay) {
+                start_ts = esp_timer_get_time();
+                repeat_delay = _this->_repeat_rate_ms;
                 xQueueOverwrite(_this->_queue, &rep);
             }
         }
-		vTaskDelay(pdMS_TO_TICKS(1));
-	}
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
 }
 
 void HIDServer::end()
 {
-	if (_task) {
-		vTaskDelete(_task);
-		_task = 0;
-	}
+    if (_task) {
+        vTaskDelete(_task);
+        _task = 0;
+    }
 
-	if (_queue) {
-		vQueueDelete(_queue);
-		_queue = 0;
-	}
+    if (_queue) {
+        vQueueDelete(_queue);
+        _queue = 0;
+    }
 
     delete _hid_source;
     _hid_source = 0;
@@ -858,12 +867,12 @@ void HIDServer::end()
 
 typedef struct
 {
-	const char *name;
-	uint8_t		value;
+    const char *name;
+    uint8_t     value;
 } keymap_t;
 
-#define EMPTY	{0,0}
-#define KEY(v)	{#v, v}
+#define EMPTY   {0,0}
+#define KEY(v)  {#v, v}
 
 static const keymap_t key_map[256] = {
     [0x00] = KEY(KEY_RESERVED),
@@ -1146,20 +1155,20 @@ int hid_kbd_map(uint8_t mod, uint8_t code)
 }
 
 bool HIDServer::keyAvailable() {
-	if (_queue) {
-		return uxQueueMessagesWaiting(_queue) > 0;
-	}
-	return true;
+    if (_queue) {
+        return uxQueueMessagesWaiting(_queue) > 0;
+    }
+    return true;
 }
 
 bool HIDServer::getNextKey(HIDKey & key) {
-	bool ret = false;
+    bool ret = false;
 
-	if (_queue) {
-		ret = xQueueReceive(_queue, &key, msToTicks(HID_SERVER_KEY_TIMEOUT));
-	}
+    if (_queue) {
+        ret = xQueueReceive(_queue, &key, msToTicks(HID_SERVER_KEY_TIMEOUT));
+    }
 
-	return ret;
+    return ret;
 }
 
 int HIDServer::checkKeys(HIDKey & key)
@@ -1171,17 +1180,17 @@ int HIDServer::checkKeys(HIDKey & key)
             if (0xA1 == _buf[0]) {
                 if ((0x01 == _buf[1]) && (10 == sz)) { // keyboard
                     // A1 01 00 00 0A 00 00 00 00 00
-                    
-					key.mod = _buf[2];
-					key.len = 0;
-                    for (int i = 0; i < 6; i++) {
-						uint8_t code = (_buf[4+i]);
-    					const keymap_t *_key = &key_map[code];
 
-						if (_key->value) {
-							key.keys[i] = _key->value;
+                    key.mod = _buf[2];
+                    key.len = 0;
+                    for (int i = 0; i < 6; i++) {
+                        uint8_t code = (_buf[4+i]);
+                        const keymap_t *_key = &key_map[code];
+
+                        if (_key->value) {
+                            key.keys[i] = _key->value;
                             key.len++;
-						} else {
+                        } else {
                             key.keys[i] = 0;
                         }
                     }
@@ -1192,6 +1201,7 @@ int HIDServer::checkKeys(HIDKey & key)
                     ret = -1;
                 }
                 else if ((0x03 == _buf[1]) && (11 == sz)) {// gamepad
+                    //  0  1  2  3  4  5  6  7  8  9  10
                     // A1 03 0F 7F FF 7F 7F 00 00 00 00
                     // printf("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", _buf[0],_buf[1],_buf[2],_buf[3],_buf[4],_buf[5],_buf[6],_buf[7],_buf[8],_buf[9],_buf[10]);
                     uint16_t gp1 = (*(uint32_t*)&_buf[3]) & 0xffff;
