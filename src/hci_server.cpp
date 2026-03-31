@@ -1449,3 +1449,8 @@ int hci_write(vector<uint8_t>& buf)
 {
     return _hci->write(buf); // send to outbound q.
 }
+
+void __attribute__ ((weak)) sys_msg(const char* msg)
+{
+    printf("sys_msg:[%s]\n", msg);
+}

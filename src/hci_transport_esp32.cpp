@@ -117,8 +117,3 @@ void sys_set_pref(const char* key, const char* value)
     else
         printf("sys_set_pref %s:%s failed (key length <= 15?)\n",key,value);
 }
-
-void sys_msg(const char* msg)
-{
-    printf("sys_msg:[%s]\n", msg);
-}
