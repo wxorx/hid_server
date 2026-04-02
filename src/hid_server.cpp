@@ -836,8 +836,8 @@ void HIDServer::updateLoop(void *arg)
         } else if (ret == 0) {
             do_repeat = false;
             start_ts = 0ULL;
-			key.pressed = false;
-            xQueueOverwrite(_this->_queue, &key);
+			rep.pressed = false;
+            xQueueOverwrite(_this->_queue, &rep);
         }
 
         if (do_repeat) {
