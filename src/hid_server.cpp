@@ -827,6 +827,7 @@ void HIDServer::updateLoop(void *arg)
         hci_update();
         int ret =_this->checkKeys(key);
         if (ret > 0) {
+			key.pressed = true;
             rep = key;
             xQueueOverwrite(_this->_queue, &key);
             start_ts = esp_timer_get_time();
@@ -835,6 +836,8 @@ void HIDServer::updateLoop(void *arg)
         } else if (ret == 0) {
             do_repeat = false;
             start_ts = 0ULL;
+			key.pressed = false;
+            xQueueOverwrite(_this->_queue, &key);
         }
 
         if (do_repeat) {
