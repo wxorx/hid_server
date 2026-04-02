@@ -840,7 +840,7 @@ void HIDServer::updateLoop(void *arg)
             xQueueOverwrite(_this->_queue, &rep);
         }
 
-        if (do_repeat) {
+        if (do_repeat && _this->_repeat_rate_ms) {
             int32_t dt = (int32_t)((esp_timer_get_time() - start_ts) / 1000ULL);
             if (dt >= repeat_delay) {
                 start_ts = esp_timer_get_time();
