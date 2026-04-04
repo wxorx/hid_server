@@ -1243,7 +1243,7 @@ int HIDServer::checkKeys(HIDKey & key)
                         key.nes |= (1<<5); // down
                     }
                     printf("nes: %08X\n", key.nes);
-                    ret = (key.dpad.key != 0) || (key.dpad.x != 0) || (key.dpad.y != 0);
+                    ret = key.nes; //(key.dpad.key != 0) || (key.dpad.x != 0) || (key.dpad.y != 0);
                 }
                 else if ((0x07 == _buf[1]) && (12 == sz)) {  // joystick
                     // A1 07 XX1 YY1 XX1 YY1 88 00 00 00 00 00
