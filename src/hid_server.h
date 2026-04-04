@@ -229,7 +229,6 @@ struct HIDKey
     uint8_t mod;
     uint8_t len;
     uint8_t nes;
-    bool pressed;
 
     union {
         uint8_t keys[HID_SERVER_MAX_KEYS];
