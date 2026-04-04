@@ -827,7 +827,7 @@ void HIDServer::updateLoop(void *arg)
         hci_update();
         int ret =_this->checkKeys(key);
         if (ret > 0) {
-			key.pressed = true;
+            key.pressed = true;
             rep = key;
             xQueueOverwrite(_this->_queue, &key);
             start_ts = esp_timer_get_time();
@@ -836,7 +836,7 @@ void HIDServer::updateLoop(void *arg)
         } else if (ret == 0) {
             do_repeat = false;
             start_ts = 0ULL;
-			rep.pressed = false;
+            rep.pressed = false;
             xQueueOverwrite(_this->_queue, &rep);
         }
 
@@ -1220,16 +1220,29 @@ int HIDServer::checkKeys(HIDKey & key)
                     key.dpad.x = 0;
                     key.dpad.y = 0;
 
-                    if (x == 0)
+                    key.nes = 0
+                              | (gp2 & GP_A)
+                              | (gp2 & GP_B)
+                              | ((gp2 & GP_SELECT) >> 8)
+                              | ((gp2 & GP_START) >> 8)
+                              ;
+
+                    if (x == 0) {
                         key.dpad.x = -1;
-                    else if (x == 0xff)
+                        key.nes |= (1<<6); // left
+                    } else if (x == 0xff) {
                         key.dpad.x = 1;
+                        key.nes |= (1<<7); // right
+                    }
 
-                    if (y == 0)
+                    if (y == 0) {
                         key.dpad.y = -1;
-                    else if (y == 0xff)
+                        key.nes |= (1<<4); // up
+                    } else if (y == 0xff) {
                         key.dpad.y = 1;
-
+                        key.nes |= (1<<5); // down
+                    }
+                    printf("nes: %08X\n", key.nes);
                     ret = (key.dpad.key != 0) || (key.dpad.x != 0) || (key.dpad.y != 0);
                 }
                 else if ((0x07 == _buf[1]) && (12 == sz)) {  // joystick
